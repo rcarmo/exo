@@ -9,7 +9,12 @@ from exo.shared.models.model_cards import ModelCard, ModelId
 from exo.shared.types.common import CommandId, NodeId
 from exo.shared.types.memory import Memory
 from exo.shared.types.text_generation import ReasoningDialect, ReasoningEffort
-from exo.shared.types.worker.instances import Instance, InstanceId, InstanceMeta
+from exo.shared.types.worker.instances import (
+    Instance,
+    InstanceId,
+    InstanceMeta,
+    default_instance_meta,
+)
 from exo.shared.types.worker.shards import Sharding, ShardMetadata
 from exo.utils.pydantic_ext import FrozenModel
 
@@ -253,7 +258,7 @@ class HuggingFaceSearchResult(BaseModel):
 class PlaceInstanceParams(BaseModel):
     model_id: ModelId
     sharding: Sharding = Sharding.Pipeline
-    instance_meta: InstanceMeta = InstanceMeta.MlxRing
+    instance_meta: InstanceMeta = Field(default_factory=default_instance_meta)
     min_nodes: int = 1
 
 

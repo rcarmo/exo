@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 
 from pydantic import model_validator
@@ -15,6 +16,13 @@ class InstanceId(Id):
 class InstanceMeta(str, Enum):
     MlxRing = "MlxRing"
     MlxJaccl = "MlxJaccl"
+    Tinygrad = "Tinygrad"
+
+
+def default_instance_meta() -> InstanceMeta:
+    if sys.platform == "darwin":
+        return InstanceMeta.MlxRing
+    return InstanceMeta.Tinygrad
 
 
 class BaseInstance(TaggedModel):
@@ -34,9 +42,12 @@ class MlxJacclInstance(BaseInstance):
     jaccl_devices: list[list[str | None]]
     jaccl_coordinators: dict[NodeId, str]
 
+class TinygradInstance(BaseInstance):
+    hosts_by_node: dict[NodeId, list[Host]] | None = None
+    ephemeral_port: int | None = None
 
 # TODO: Single node instance
-Instance = MlxRingInstance | MlxJacclInstance
+Instance = MlxRingInstance | MlxJacclInstance | TinygradInstance
 
 
 class BoundInstance(FrozenModel):

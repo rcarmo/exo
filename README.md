@@ -28,6 +28,8 @@ exo connects all your devices into an AI cluster. Not only does exo enable runni
 - **MLX Support**: exo uses [MLX](https://github.com/ml-explore/mlx) as an inference backend and [MLX distributed](https://ml-explore.github.io/mlx/build/html/usage/distributed.html) for distributed communication.
 - **Multiple API Compatibility**: Compatible with OpenAI Chat Completions API, Claude Messages API, OpenAI Responses API, and Ollama API - use your existing tools and clients.
 - **Custom Model Support**: Load custom models from HuggingFace hub to expand the range of available models.
+- **Experimental tinygrad support**: on Linux/non-Apple systems, exo can use a tinygrad backend for CPU/GPU backends exposed by tinygrad (including CLANG/LLVM, CUDA, HIP/ROCm, and OpenCL/Vulkan where tinygrad supports them).
+  Set `USE_FP32=1` for older OpenCL/AMD-like devices that cannot reliably run fp16/bf16 kernels.
 
 ## Dashboard
 

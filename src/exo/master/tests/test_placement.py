@@ -41,6 +41,7 @@ from exo.shared.types.worker.instances import (
     InstanceMeta,
     MlxJacclInstance,
     MlxRingInstance,
+    TinygradInstance,
 )
 from exo.shared.types.worker.runners import ShardAssignments
 from exo.shared.types.worker.shards import PipelineShardMetadata, Sharding
@@ -482,6 +483,7 @@ def test_tensor_rdma_backend_connectivity_matrix(
             assert len(ip_part.split(".")) == 4
 
 
+
 def _make_task(
     instance_id: InstanceId,
     status: TaskStatus = TaskStatus.Running,
@@ -774,3 +776,26 @@ def test_placement_does_not_prefer_cycle_with_failed_download(
     assigned_nodes = set(instance.shard_assignments.node_to_runner.keys())
     # node_a should win on RAM tiebreaker since failed download scores 0.0
     assert assigned_nodes == {node_a}
+
+def test_place_tinygrad_single_node(model_card: ModelCard):
+    """Tinygrad placement should create a TinygradInstance for a single node."""
+    topology = Topology()
+    node_id = NodeId()
+    topology.add_node(node_id)
+    node_memory = {node_id: create_node_memory(model_card.storage_size.in_bytes * 2)}
+    node_network = {node_id: create_node_network()}
+
+    command = PlaceInstance(
+        command_id=CommandId(),
+        model_card=model_card,
+        sharding=Sharding.Pipeline,
+        instance_meta=InstanceMeta.Tinygrad,
+        min_nodes=1,
+    )
+
+    placements = place_instance(command, topology, {}, node_memory, node_network)
+
+    assert len(placements) == 1
+    instance = list(placements.values())[0]
+    assert isinstance(instance, TinygradInstance)
+

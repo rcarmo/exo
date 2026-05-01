@@ -43,6 +43,7 @@ from exo.shared.types.worker.instances import (
     InstanceMeta,
     MlxJacclInstance,
     MlxRingInstance,
+    TinygradInstance,
 )
 from exo.shared.types.worker.shards import Sharding
 from exo.utils.ports import random_ephemeral_port
@@ -201,8 +202,9 @@ def place_instance(
         ),
     )
 
-    # Single-node: force Pipeline/Ring (Tensor and Jaccl require multi-node)
-    if len(selected_cycle) == 1:
+    # Single-node: force Pipeline/Ring for MLX (Tensor and Jaccl require multi-node),
+    # but keep Tinygrad on Linux/non-Apple where it is the default backend.
+    if len(selected_cycle) == 1 and command.instance_meta != InstanceMeta.Tinygrad:
         command = command.model_copy(
             update={
                 "instance_meta": InstanceMeta.MlxRing,
@@ -265,6 +267,11 @@ def place_instance(
                 shard_assignments=shard_assignments,
                 hosts_by_node=hosts_by_node,
                 ephemeral_port=ephemeral_port,
+            )
+        case InstanceMeta.Tinygrad:
+            target_instances[instance_id] = TinygradInstance(
+                instance_id=instance_id,
+                shard_assignments=shard_assignments,
             )
 
     return target_instances

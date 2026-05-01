@@ -196,7 +196,12 @@ from exo.shared.types.text_generation import (
     TextGenerationTaskParams,
 )
 from exo.shared.types.worker.downloads import DownloadCompleted
-from exo.shared.types.worker.instances import Instance, InstanceId, InstanceMeta
+from exo.shared.types.worker.instances import (
+    Instance,
+    InstanceId,
+    InstanceMeta,
+    default_instance_meta,
+)
 from exo.shared.types.worker.shards import Sharding
 from exo.utils.banner import print_startup_banner
 from exo.utils.channels import Receiver, Sender, channel
@@ -463,17 +468,18 @@ class API:
         self,
         model_id: ModelId,
         sharding: Sharding = Sharding.Pipeline,
-        instance_meta: InstanceMeta = InstanceMeta.MlxRing,
+        instance_meta: InstanceMeta | None = None,
         min_nodes: int = 1,
     ) -> Instance:
         model_card = await ModelCard.load(model_id)
+        resolved_instance_meta = instance_meta or default_instance_meta()
 
         try:
             placements = get_instance_placements(
                 PlaceInstance(
                     model_card=model_card,
                     sharding=sharding,
-                    instance_meta=instance_meta,
+                    instance_meta=resolved_instance_meta,
                     min_nodes=min_nodes,
                 ),
                 node_memory=self.state.node_memory,
@@ -517,7 +523,11 @@ class API:
             ) from exc
         instance_combinations: list[tuple[Sharding, InstanceMeta, int]] = []
         for sharding in (Sharding.Pipeline, Sharding.Tensor):
-            for instance_meta in (InstanceMeta.MlxRing, InstanceMeta.MlxJaccl):
+            for instance_meta in (
+                InstanceMeta.Tinygrad,
+                InstanceMeta.MlxRing,
+                InstanceMeta.MlxJaccl,
+            ):
                 instance_combinations.extend(
                     [
                         (sharding, instance_meta, i)

@@ -5,7 +5,7 @@ import loguru
 
 from exo.shared.types.events import Event, RunnerStatusUpdated
 from exo.shared.types.tasks import Task, TaskId
-from exo.shared.types.worker.instances import BoundInstance
+from exo.shared.types.worker.instances import BoundInstance, TinygradInstance
 from exo.shared.types.worker.runners import RunnerFailed
 from exo.utils.channels import ClosedResourceError, MpReceiver, MpSender
 from exo.worker.engines.base import Builder
@@ -26,16 +26,29 @@ def entrypoint(
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(resource.RLIMIT_NOFILE, (min(max(soft, 2048), hard), hard))
 
-    fast_synch_override = os.environ.get("EXO_FAST_SYNCH")
-    if fast_synch_override == "false":
-        os.environ["MLX_METAL_FAST_SYNCH"] = "0"
+    is_tinygrad = isinstance(bound_instance.instance, TinygradInstance)
+
+    if is_tinygrad:
+        # Defaults tuned for tinygrad decode inference. Users may override via env.
+        os.environ.setdefault("JIT", "1")
+        os.environ.setdefault("BEAM", "2")
+        os.environ.setdefault("TC", "1")
     else:
-        os.environ["MLX_METAL_FAST_SYNCH"] = "1"
+        fast_synch_override = os.environ.get("EXO_FAST_SYNCH")
+        if fast_synch_override == "false":
+            os.environ["MLX_METAL_FAST_SYNCH"] = "0"
+        else:
+            os.environ["MLX_METAL_FAST_SYNCH"] = "1"
 
-    logger.info(f"Fast synch flag: {os.environ['MLX_METAL_FAST_SYNCH']}")
+        logger.info(f"Fast synch flag: {os.environ['MLX_METAL_FAST_SYNCH']}")
 
-    # Import main after setting global logger - this lets us just import logger from this module
     try:
+        if is_tinygrad:
+            from exo.worker.runner.llm_inference.tinygrad_runner import main as tinygrad_main
+
+            tinygrad_main(bound_instance, event_sender, task_receiver, cancel_receiver)
+            return
+
         from exo.worker.runner.runner import Runner
 
         builder: Builder
