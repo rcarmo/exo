@@ -1,9 +1,48 @@
+import os
 from typing import final
 
 from tinygrad.tensor import Tensor
 
 from .dequantization import affine_dequantize
 from .packing import PackedTensor, unpack_bits
+
+_DEQUANTIZED_WEIGHT_CACHE: dict[tuple[int, int, int, int, int], Tensor] = {}
+
+
+def clear_dequantized_weight_cache() -> None:
+    _DEQUANTIZED_WEIGHT_CACHE.clear()
+
+
+def _cache_dequantized_weights() -> bool:
+    return os.environ.get("EXO_TINYGRAD_CACHE_DEQUANTIZED_WEIGHTS", "1").lower() not in {
+        "0", "false", "no", "off",
+    }
+
+
+def _cache_key(
+    weight_q: PackedTensor,
+    scales: Tensor,
+    biases: Tensor,
+    group_size: int,
+) -> tuple[int, int, int, int, int]:
+    return (id(weight_q.tensor), id(scales), id(biases), group_size, weight_q.bits)
+
+
+def _dequantize_cached(
+    weight_q: PackedTensor,
+    scales: Tensor,
+    biases: Tensor,
+    group_size: int,
+) -> Tensor:
+    key = _cache_key(weight_q, scales, biases, group_size)
+    if _cache_dequantized_weights() and key in _DEQUANTIZED_WEIGHT_CACHE:
+        return _DEQUANTIZED_WEIGHT_CACHE[key]
+
+    unpacked = unpack_bits(weight_q)
+    dequantized = affine_dequantize(unpacked, scales, biases, group_size).contiguous().realize()  # pyright: ignore[reportUnknownMemberType]
+    if _cache_dequantized_weights():
+        _DEQUANTIZED_WEIGHT_CACHE[key] = dequantized
+    return dequantized
 
 
 @final
@@ -38,9 +77,8 @@ class QuantizedLinear:
         return result
 
     def dequantize(self) -> Tensor:
-        unpacked = unpack_bits(self.weight_q)
-        return affine_dequantize(
-            unpacked,  self.scales,
+        return _dequantize_cached(
+            self.weight_q, self.scales,
             self.biases, self.group_size)
 
     @property
@@ -78,7 +116,6 @@ class QuantizedEmbedding:
         return self.dequantize()[indices]
 
     def dequantize(self) -> Tensor:
-        unpacked = unpack_bits(self.weight_q)
-        return affine_dequantize(
-            unpacked, self.scales, self.biases, self.group_size
+        return _dequantize_cached(
+            self.weight_q, self.scales, self.biases, self.group_size
         )

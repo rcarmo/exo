@@ -61,6 +61,9 @@ _jit_registry: dict[int, _JitState] = {}
 def cleanup_jit_state() -> None:
     """Called by engine cleanup to free all JIT state."""
     _jit_registry.clear()
+    from exo.worker.engines.tinygrad.quantization.layers import clear_dequantized_weight_cache
+
+    clear_dequantized_weight_cache()
 
 
 def _build_jit_decode(

@@ -399,3 +399,32 @@ def test_package_exports_packed_tensor():
     from exo.worker.engines.tinygrad.quantization import (
         PackedTensor,  # noqa: F401  # pyright: ignore[reportUnusedImport]
     )
+
+def test_dequantized_weights_are_cached(monkeypatch):
+    from tinygrad.tensor import Tensor
+
+    from exo.worker.engines.tinygrad.quantization.layers import (
+        QuantizedLinear,
+        clear_dequantized_weight_cache,
+    )
+    from exo.worker.engines.tinygrad.quantization.packing import PackedTensor
+
+    clear_dequantized_weight_cache()
+    monkeypatch.setenv("EXO_TINYGRAD_CACHE_DEQUANTIZED_WEIGHTS", "1")
+
+    packed = PackedTensor(
+        tensor=Tensor([[0x03020100]], dtype="uint32"),
+        original_shape=(1, 4),
+        pack_factor=4,
+        bits=8,
+    )
+    scales = Tensor([[1.0]])
+    biases = Tensor([[0.0]])
+    layer_a = QuantizedLinear(packed, scales, biases, group_size=4)
+    layer_b = QuantizedLinear(packed, scales, biases, group_size=4)
+
+    first = layer_a.dequantize()
+    second = layer_b.dequantize()
+
+    assert first is second
+    clear_dequantized_weight_cache()
