@@ -72,6 +72,21 @@ def test_tinygrad_runtime_defaults_to_cpu(monkeypatch: pytest.MonkeyPatch) -> No
     assert os.environ["TC"] == "0"
 
 
+def test_tinygrad_runtime_can_select_opencl(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from exo.worker.runner.bootstrap import configure_tinygrad_runtime
+
+    fake_device = _install_fake_tinygrad_device(monkeypatch)
+    monkeypatch.setenv("EXO_TINYGRAD_DEVICE", "cl")
+    monkeypatch.delenv("TC", raising=False)
+
+    assert configure_tinygrad_runtime() == "CL"
+    assert fake_device.DEFAULT == "CL"
+    assert os.environ["CL"] == "1"
+    assert os.environ["TC"] == "1"
+
+
 def test_tinygrad_runtime_can_select_vulkan(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

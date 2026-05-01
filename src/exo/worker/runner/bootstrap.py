@@ -14,7 +14,7 @@ from exo.worker.engines.base import Builder
 logger: "loguru.Logger" = loguru.logger
 
 TINYGRAD_DEVICE_ENV: Final = "EXO_TINYGRAD_DEVICE"
-SUPPORTED_TINYGRAD_DEVICES: Final = frozenset({"CPU", "VULKAN"})
+SUPPORTED_TINYGRAD_DEVICES: Final = frozenset({"CPU", "CL", "VULKAN"})
 
 
 def configure_tinygrad_runtime() -> str:
