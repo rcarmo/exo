@@ -16,7 +16,11 @@ services:
       XDG_CACHE_HOME: /home/exo/.cache
       XDG_DATA_HOME: /home/exo/.local/share
       EXO_LIBP2P_NAMESPACE: home
-      EXO_TINYGRAD_DEVICE: CPU
+      EXO_TINYGRAD_DEVICE: WEBGPU
+      WEBGPU_PATH: /opt/dawn/libwebgpu_dawn.so
+      WEBGPU_BACKEND: WGPUBackendType_Vulkan
+      VK_ICD_FILENAMES: /etc/vulkan/icd.d/mali.json
+      LD_LIBRARY_PATH: /usr/lib64:/opt/cixgpu-pro/lib/aarch64-linux-gnu
     command: >-
       bash -lc "mkdir -p /home/exo/.config/exo /home/exo/.cache/exo /home/exo/.local/share/exo/models /home/exo/.local/share/exo/custom_model_cards && uv run exo"
     devices:
@@ -25,6 +29,7 @@ services:
     volumes:
       - /opt/cixgpu-pro:/opt/cixgpu-pro:ro
       - /etc/vulkan:/etc/vulkan:ro
+      - ./dawn:/opt/dawn:ro
       - exo-config:/home/exo/.config/exo
       - exo-cache:/home/exo/.cache/exo
       - exo-data:/home/exo/.local/share/exo

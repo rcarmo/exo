@@ -12,6 +12,8 @@ RUN dnf install -y \
     libdrm \
     libwayland-client \
     libwayland-server \
+    libX11 \
+    vulkan-loader \
     nodejs \
     npm \
     openssl-devel \
