@@ -190,6 +190,7 @@ from exo.shared.types.tasks import (
     ImageGeneration as ImageGenerationTask,
 )
 from exo.shared.types.tasks import (
+    TaskStatus,
     TextGeneration as TextGenerationTask,
 )
 from exo.shared.types.text_generation import (
@@ -441,7 +442,32 @@ class API:
                 detail=f"unable to find path '{path.replace('/', '.')}' in state json",
             ) from e
 
+    def _active_model_conflict(self, model_id: ModelId) -> str | None:
+        for instance_id, instance in self.state.instances.items():
+            if instance.shard_assignments.model_id == model_id:
+                return f"model {model_id} already has active instance {instance_id}"
+
+        active_statuses = {TaskStatus.Pending, TaskStatus.Running}
+        for task in self.state.tasks.values():
+            if task.task_status not in active_statuses:
+                continue
+            task_model_id: ModelId | None = None
+            if hasattr(task, "bound_instance"):
+                task_model_id = task.bound_instance.instance.shard_assignments.model_id
+            elif hasattr(task, "shard_metadata"):
+                task_model_id = task.shard_metadata.model_card.model_id
+            elif hasattr(task, "task_params"):
+                task_model_id = task.task_params.model
+            if task_model_id == model_id:
+                return f"model {model_id} already has active task {task.task_id} ({type(task).__name__})"
+        return None
+
+    def _raise_if_model_busy(self, model_id: ModelId) -> None:
+        if conflict := self._active_model_conflict(model_id):
+            raise HTTPException(status_code=409, detail=conflict)
+
     async def place_instance(self, payload: PlaceInstanceParams):
+        self._raise_if_model_busy(payload.model_id)
         command = PlaceInstance(
             model_card=await ModelCard.load(payload.model_id),
             sharding=payload.sharding,
@@ -460,6 +486,7 @@ class API:
         self, payload: CreateInstanceParams
     ) -> CreateInstanceResponse:
         instance = _linux_instance(payload.instance)
+        self._raise_if_model_busy(instance.shard_assignments.model_id)
         model_card = await ModelCard.load(instance.shard_assignments.model_id)
         required_memory = model_card.storage_size
         available_memory = self._calculate_total_available_memory()

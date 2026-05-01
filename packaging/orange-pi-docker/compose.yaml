@@ -17,6 +17,7 @@ services:
       XDG_DATA_HOME: /home/exo/.local/share
       EXO_LIBP2P_NAMESPACE: home
       EXO_TINYGRAD_DEVICE: WEBGPU
+      EXO_TINYGRAD_CACHE_DEQUANTIZED_WEIGHTS: "0"
       WEBGPU_PATH: /opt/dawn/libwebgpu_dawn.so
       WEBGPU_BACKEND: WGPUBackendType_Vulkan
       VK_ICD_FILENAMES: /etc/vulkan/icd.d/mali.json

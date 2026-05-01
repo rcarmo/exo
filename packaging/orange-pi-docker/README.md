@@ -12,6 +12,7 @@ Runtime choices:
 - `network_mode: host` so libp2p/mDNS auto-discovery works on the LAN.
 - `EXO_LIBP2P_NAMESPACE=home` for the home cluster.
 - `EXO_TINYGRAD_DEVICE=WEBGPU` to use tinygrad's WebGPU runtime over Dawn/Vulkan.
+- `EXO_TINYGRAD_CACHE_DEQUANTIZED_WEIGHTS=0` to avoid excessive memory pressure on this board.
 - `WEBGPU_BACKEND=WGPUBackendType_Vulkan` and `VK_ICD_FILENAMES=/etc/vulkan/icd.d/mali.json` select the Mali Vulkan stack.
 - Mounts the local CIX/Mali userspace and devices (`/opt/cixgpu-pro`, `/dev/mali0`, `/dev/dri`) for the Orange Pi GPU stack.
 
