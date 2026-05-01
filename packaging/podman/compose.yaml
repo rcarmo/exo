@@ -1,0 +1,26 @@
+services:
+  exo:
+    build:
+      context: ../..
+      dockerfile: packaging/podman/Containerfile
+    container_name: exo-cpu
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      HOME: /home/exo
+      XDG_CONFIG_HOME: /home/exo/.config
+      XDG_CACHE_HOME: /home/exo/.cache
+      XDG_DATA_HOME: /home/exo/.local/share
+      EXO_LIBP2P_PORT: "${EXO_LIBP2P_PORT:-52416}"
+      EXO_LIBP2P_NAMESPACE: "${EXO_LIBP2P_NAMESPACE:-home}"
+      EXO_TINYGRAD_DEVICE: "${EXO_TINYGRAD_DEVICE:-CPU}"
+    command: ["bash", "-lc", "mkdir -p /home/exo/.local/share/exo/models && exec uv run exo --libp2p-port ${EXO_LIBP2P_PORT:-52416}"]
+    volumes:
+      - exo-config:/home/exo/.config/exo
+      - exo-cache:/home/exo/.cache/exo
+      - exo-data:/home/exo/.local/share/exo
+
+volumes:
+  exo-config:
+  exo-cache:
+  exo-data:

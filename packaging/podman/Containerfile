@@ -1,0 +1,52 @@
+FROM fedora:42
+
+RUN dnf install -y \
+    ca-certificates \
+    curl \
+    findutils \
+    gcc \
+    gcc-c++ \
+    git \
+    hostname \
+    iproute \
+    iputils \
+    make \
+    mesa-dri-drivers \
+    mesa-vulkan-drivers \
+    nodejs \
+    npm \
+    procps-ng \
+    rustup \
+    tar \
+    vulkan-loader \
+    vulkan-tools \
+    which \
+    && dnf clean all
+
+RUN useradd -m -u 1000 exo
+
+USER exo
+WORKDIR /home/exo
+
+ENV HOME=/home/exo \
+    CARGO_HOME=/home/exo/.cargo \
+    RUSTUP_HOME=/home/exo/.rustup \
+    PATH=/home/exo/.local/bin:/home/exo/.cargo/bin:${PATH} \
+    XDG_CONFIG_HOME=/home/exo/.config \
+    XDG_CACHE_HOME=/home/exo/.cache \
+    XDG_DATA_HOME=/home/exo/.local/share
+
+RUN rustup-init -y --default-toolchain nightly --profile minimal
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+COPY --chown=exo:exo . /home/exo/exo
+
+WORKDIR /home/exo/exo/dashboard
+RUN npm install && npm run build
+
+WORKDIR /home/exo/exo
+RUN uv sync
+
+EXPOSE 52415 52416
+
+CMD ["bash", "-lc", "mkdir -p /home/exo/.local/share/exo/models && exec uv run exo --libp2p-port ${EXO_LIBP2P_PORT:-52416}"]
