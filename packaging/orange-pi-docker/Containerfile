@@ -2,6 +2,7 @@ FROM fedora:42
 
 RUN dnf install -y \
     ca-certificates \
+    clang \
     curl \
     findutils \
     gcc \
