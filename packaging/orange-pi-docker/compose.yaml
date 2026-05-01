@@ -1,0 +1,35 @@
+services:
+  exo:
+    build:
+      context: .
+      dockerfile: Containerfile
+      args:
+        EXO_REPO: https://github.com/rcarmo/exo.git
+        EXO_REF: orange/linux-vulkan-amd-tinygrad
+    container_name: exo-cpu
+    restart: unless-stopped
+    user: "0:0"
+    network_mode: host
+    environment:
+      HOME: /home/exo
+      XDG_CONFIG_HOME: /home/exo/.config
+      XDG_CACHE_HOME: /home/exo/.cache
+      XDG_DATA_HOME: /home/exo/.local/share
+      EXO_LIBP2P_NAMESPACE: home
+      LD_LIBRARY_PATH: /opt/cixgpu-pro/lib/aarch64-linux-gnu
+    command: >-
+      bash -lc "mkdir -p /home/exo/.config/exo /home/exo/.cache/exo /home/exo/.local/share/exo/models /home/exo/.local/share/exo/custom_model_cards && uv run exo"
+    devices:
+      - /dev/mali0:/dev/mali0
+      - /dev/dri:/dev/dri
+    volumes:
+      - /opt/cixgpu-pro:/opt/cixgpu-pro:ro
+      - /etc/vulkan:/etc/vulkan:ro
+      - exo-config:/home/exo/.config/exo
+      - exo-cache:/home/exo/.cache/exo
+      - exo-data:/home/exo/.local/share/exo
+
+volumes:
+  exo-config:
+  exo-cache:
+  exo-data:
