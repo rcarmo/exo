@@ -1,0 +1,8 @@
+services:
+  exo:
+    environment:
+      EXO_TINYGRAD_DEVICE: VULKAN
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - keep-groups

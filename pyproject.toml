@@ -160,7 +160,7 @@ environments = ["sys_platform == 'darwin'", "sys_platform == 'linux'"]
 conflicts = [[{ extra = "cuda12" }, { extra = "cuda13" }, { extra = "cpu" }]]
 constraint-dependencies = ["transformers>=5.6.2"]
 override-dependencies = [
-  "mlx==0.31.1; sys_platform=='linux'",
+  "mlx==0.31.1; sys_platform=='linux' and (extra == 'cpu' or extra == 'cuda12' or extra == 'cuda13')",
   "mlx; sys_platform=='darwin'",
 ]
 
