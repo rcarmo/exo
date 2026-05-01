@@ -3,6 +3,7 @@ import contextlib
 import hashlib
 import json
 import random
+import sys
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable, Iterable
 from datetime import datetime, timezone
@@ -200,6 +201,7 @@ from exo.shared.types.worker.instances import (
     Instance,
     InstanceId,
     InstanceMeta,
+    TinygradInstance,
     default_instance_meta,
 )
 from exo.shared.types.worker.shards import Sharding
@@ -211,6 +213,21 @@ from exo.utils.task_group import TaskGroup
 
 _API_EVENT_LOG_DIR = EXO_EVENT_LOG_DIR / "api"
 ONBOARDING_COMPLETE_FILE = EXO_CACHE_HOME / "onboarding_complete"
+
+
+def _linux_instance_meta(instance_meta: InstanceMeta) -> InstanceMeta:
+    if sys.platform != "darwin" and instance_meta != InstanceMeta.Tinygrad:
+        return InstanceMeta.Tinygrad
+    return instance_meta
+
+
+def _linux_instance(instance: Instance) -> Instance:
+    if sys.platform == "darwin" or isinstance(instance, TinygradInstance):
+        return instance
+    return TinygradInstance(
+        instance_id=instance.instance_id,
+        shard_assignments=instance.shard_assignments,
+    )
 
 
 def _format_to_content_type(image_format: Literal["png", "jpeg", "webp"] | None) -> str:
@@ -428,7 +445,7 @@ class API:
         command = PlaceInstance(
             model_card=await ModelCard.load(payload.model_id),
             sharding=payload.sharding,
-            instance_meta=payload.instance_meta,
+            instance_meta=_linux_instance_meta(payload.instance_meta),
             min_nodes=payload.min_nodes,
         )
         await self._send(command)
@@ -442,7 +459,7 @@ class API:
     async def create_instance(
         self, payload: CreateInstanceParams
     ) -> CreateInstanceResponse:
-        instance = payload.instance
+        instance = _linux_instance(payload.instance)
         model_card = await ModelCard.load(instance.shard_assignments.model_id)
         required_memory = model_card.storage_size
         available_memory = self._calculate_total_available_memory()
@@ -472,7 +489,7 @@ class API:
         min_nodes: int = 1,
     ) -> Instance:
         model_card = await ModelCard.load(model_id)
-        resolved_instance_meta = instance_meta or default_instance_meta()
+        resolved_instance_meta = _linux_instance_meta(instance_meta or default_instance_meta())
 
         try:
             placements = get_instance_placements(
@@ -522,20 +539,21 @@ class API:
                 status_code=400, detail=f"Failed to load model card: {exc}"
             ) from exc
         instance_combinations: list[tuple[Sharding, InstanceMeta, int]] = []
-        for sharding in (Sharding.Pipeline, Sharding.Tensor):
-            for instance_meta in (
-                InstanceMeta.Tinygrad,
-                InstanceMeta.MlxRing,
-                InstanceMeta.MlxJaccl,
-            ):
-                instance_combinations.extend(
-                    [
-                        (sharding, instance_meta, i)
-                        for i in range(
-                            1, len(list(self.state.topology.list_nodes())) + 1
-                        )
-                    ]
-                )
+        node_count = len(list(self.state.topology.list_nodes()))
+        if sys.platform == "darwin":
+            for sharding in (Sharding.Pipeline, Sharding.Tensor):
+                for instance_meta in (
+                    InstanceMeta.Tinygrad,
+                    InstanceMeta.MlxRing,
+                    InstanceMeta.MlxJaccl,
+                ):
+                    instance_combinations.extend(
+                        [(sharding, instance_meta, i) for i in range(1, node_count + 1)]
+                    )
+        else:
+            instance_combinations.extend(
+                [(Sharding.Pipeline, InstanceMeta.Tinygrad, i) for i in range(1, node_count + 1)]
+            )
         # TODO: PDD
         # instance_combinations.append((Sharding.PrefillDecodeDisaggregation, InstanceMeta.MlxRing, 1))
 
