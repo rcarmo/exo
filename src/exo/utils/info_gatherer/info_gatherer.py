@@ -326,6 +326,9 @@ class NodeDiskUsage(TaggedModel):
 
     @classmethod
     async def gather(cls) -> Self:
+        await to_thread.run_sync(
+            lambda: EXO_DEFAULT_MODELS_DIR.mkdir(parents=True, exist_ok=True)
+        )
         return cls(
             disk_usage=await to_thread.run_sync(
                 DiskUsage.from_path, EXO_DEFAULT_MODELS_DIR

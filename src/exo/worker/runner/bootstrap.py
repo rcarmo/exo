@@ -1,5 +1,7 @@
+import importlib
 import os
 import resource
+import sys
 
 import loguru
 
@@ -11,6 +13,37 @@ from exo.utils.channels import ClosedResourceError, MpReceiver, MpSender
 from exo.worker.engines.base import Builder
 
 logger: "loguru.Logger" = loguru.logger
+
+
+def _configure_mlx_metal_fast_synch() -> None:
+    if sys.platform != "darwin":
+        logger.info("Skipping MLX Metal fast synch flag on non-Darwin platform")
+        return
+
+    fast_synch_override = os.environ.get("EXO_FAST_SYNCH")
+    if fast_synch_override == "false":
+        os.environ["MLX_METAL_FAST_SYNCH"] = "0"
+    else:
+        os.environ["MLX_METAL_FAST_SYNCH"] = "1"
+
+    logger.info(f"Fast synch flag: {os.environ['MLX_METAL_FAST_SYNCH']}")
+
+
+def _validate_mlx_text_runtime() -> None:
+    try:
+        mlx_core = importlib.import_module("mlx.core")
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "MLX text runner is unavailable. Install exo with the platform extra "
+            "for this host, for example `uv sync --extra cpu` on Linux CPU nodes."
+        ) from exc
+
+    if not hasattr(mlx_core, "new_thread_local_stream"):
+        raise RuntimeError(
+            "MLX text runner is incompatible: `mlx.core` is missing "
+            "`new_thread_local_stream`. Re-sync the environment so `mlx`, "
+            "`mlx-cpu`, and `mlx-lm` resolve to compatible versions."
+        )
 
 
 def entrypoint(
@@ -26,13 +59,7 @@ def entrypoint(
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(resource.RLIMIT_NOFILE, (min(max(soft, 2048), hard), hard))
 
-    fast_synch_override = os.environ.get("EXO_FAST_SYNCH")
-    if fast_synch_override == "false":
-        os.environ["MLX_METAL_FAST_SYNCH"] = "0"
-    else:
-        os.environ["MLX_METAL_FAST_SYNCH"] = "1"
-
-    logger.info(f"Fast synch flag: {os.environ['MLX_METAL_FAST_SYNCH']}")
+    _configure_mlx_metal_fast_synch()
 
     # Import main after setting global logger - this lets us just import logger from this module
     try:
@@ -47,6 +74,8 @@ def entrypoint(
                 event_sender, cancel_receiver, bound_instance.bound_shard
             )
         else:
+            _validate_mlx_text_runtime()
+
             from exo.worker.engines.mlx.patches import apply_mlx_patches
 
             apply_mlx_patches()

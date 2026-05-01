@@ -49,8 +49,8 @@ dev = [
 [project.optional-dependencies]
 build = ["nanobind"]
 cpu = [
-  "mlx==0.31.1; sys_platform == 'linux'",
-  "mlx-cpu==0.31.1; sys_platform == 'linux'",
+  "mlx==0.31.2; sys_platform == 'linux'",
+  "mlx-cpu==0.31.2; sys_platform == 'linux'",
   "mlx-lm; sys_platform == 'linux'",
   "mlx-vlm>=0.3.11; sys_platform== 'linux'",
   "torch>=2.10.0; sys_platform == 'linux'",
@@ -159,7 +159,8 @@ environments = ["sys_platform == 'darwin'", "sys_platform == 'linux'"]
 conflicts = [[{ extra = "cuda12" }, { extra = "cuda13" }, { extra = "cpu" }]]
 constraint-dependencies = ["transformers>=5.6.2"]
 override-dependencies = [
-  "mlx==0.31.1; sys_platform=='linux'",
+  "mlx==0.31.2; sys_platform=='linux' and extra == 'cpu'",
+  "mlx==0.31.1; sys_platform=='linux' and (extra == 'cuda12' or extra == 'cuda13')",
   "mlx; sys_platform=='darwin'",
 ]
 
