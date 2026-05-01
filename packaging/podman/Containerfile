@@ -45,4 +45,4 @@ RUN uv sync --extra cpu
 
 EXPOSE 52415 52416
 
-CMD ["bash", "-lc", "mkdir -p /home/exo/.local/share/exo/models && exec uv run --extra cpu exo --libp2p-port ${EXO_LIBP2P_PORT:-52416}"]
+CMD ["bash", "-lc", "mkdir -p /home/exo/.local/share/exo/models && exec uv run --extra cpu exo --no-worker --no-downloads --libp2p-port ${EXO_LIBP2P_PORT:-52416}"]

@@ -12,6 +12,8 @@ services:
       XDG_CACHE_HOME: /home/exo/.cache
       XDG_DATA_HOME: /home/exo/.local/share
       EXO_LIBP2P_PORT: "${EXO_LIBP2P_PORT:-52416}"
+      EXO_LIBP2P_NAMESPACE: "${EXO_LIBP2P_NAMESPACE:-home}"
+    command: ["bash", "-lc", "mkdir -p /home/exo/.local/share/exo/models && exec uv run --extra cpu exo --no-worker --no-downloads --libp2p-port ${EXO_LIBP2P_PORT:-52416}"]
     volumes:
       - exo-config:/home/exo/.config/exo
       - exo-cache:/home/exo/.cache/exo
