@@ -87,6 +87,21 @@ def test_tinygrad_runtime_can_select_opencl(
     assert os.environ["TC"] == "1"
 
 
+def test_tinygrad_runtime_can_select_webgpu(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from exo.worker.runner.bootstrap import configure_tinygrad_runtime
+
+    fake_device = _install_fake_tinygrad_device(monkeypatch)
+    monkeypatch.setenv("EXO_TINYGRAD_DEVICE", "webgpu")
+    monkeypatch.delenv("TC", raising=False)
+
+    assert configure_tinygrad_runtime() == "WEBGPU"
+    assert fake_device.DEFAULT == "WEBGPU"
+    assert os.environ["WEBGPU"] == "1"
+    assert os.environ["TC"] == "1"
+
+
 def test_tinygrad_runtime_can_select_vulkan(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

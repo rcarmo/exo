@@ -6,9 +6,12 @@ The image uses the base Linux dependency set instead of the `cpu` extra so it
 does not install or start the Linux MLX runtime. By default the compose file
 sets `EXO_TINYGRAD_DEVICE=CPU`, which forces the tinygrad runner onto plain CPU.
 Set `EXO_TINYGRAD_DEVICE=CL` plus `OPENCL_PATH=/path/to/libOpenCL.so` to run
-through tinygrad's OpenCL device. Set `EXO_TINYGRAD_DEVICE=VULKAN`, or use the
-Vulkan override file below, to run through tinygrad's Vulkan device when the
-installed tinygrad build provides one.
+through tinygrad's OpenCL device. `EXO_TINYGRAD_DEVICE=WEBGPU` is accepted, but
+requires a compatible Dawn `libwebgpu_dawn.so` exposed via `WEBGPU_PATH`; the
+Python `wgpu` package's `libwgpu_native` is not ABI-compatible with tinygrad's
+Dawn bindings. Set `EXO_TINYGRAD_DEVICE=VULKAN`, or use the Vulkan override file
+below, to run through tinygrad's Vulkan device when the installed tinygrad build
+provides one.
 
 Network discovery requires host networking because exo's libp2p layer uses local
 network discovery and listens on the host interface. The compose file sets:

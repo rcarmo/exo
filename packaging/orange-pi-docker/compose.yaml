@@ -16,9 +16,7 @@ services:
       XDG_CACHE_HOME: /home/exo/.cache
       XDG_DATA_HOME: /home/exo/.local/share
       EXO_LIBP2P_NAMESPACE: home
-      EXO_TINYGRAD_DEVICE: CL
-      OPENCL_PATH: /opt/cixgpu-pro/lib/aarch64-linux-gnu/libOpenCL.so
-      LD_LIBRARY_PATH: /opt/cixgpu-pro/lib/aarch64-linux-gnu
+      EXO_TINYGRAD_DEVICE: CPU
     command: >-
       bash -lc "mkdir -p /home/exo/.config/exo /home/exo/.cache/exo /home/exo/.local/share/exo/models /home/exo/.local/share/exo/custom_model_cards && uv run exo"
     devices:
