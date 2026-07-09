@@ -512,6 +512,7 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: EXO-dmg-${{ env.RELEASE_VERSION }}
           path: output/EXO-${{ env.RELEASE_VERSION }}.dmg
 
